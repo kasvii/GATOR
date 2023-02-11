@@ -13,7 +13,7 @@ Here is the performance of GATOR.
 
 ### Data
 
-We use the same datasets as [pose2mesh](https://github.com/hongsukchoi/Pose2Mesh_RELEASE). Please follow the instructions to perpare datasets and files.
+We use the same datasets as [Pose2Mesh](https://github.com/hongsukchoi/Pose2Mesh_RELEASE). Please follow the instructions to perpare datasets and files.
 
 The `data` directory structure should follow the below hierarchy.
 ```
@@ -62,7 +62,7 @@ For the MANO layer, I used [manopth](https://github.com/hassony2/manopth). The r
 Download `MANO_RIGHT.pkl` from [here](https://mano.is.tue.mpg.de/downloads) at `${ROOT}/manopth/mano/models`.
 
 ### Pretrained model weights
-Download pretrained model weights from [here](https://drive.google.com/drive/folders/1HayITLQYf6d43ksShRYF3CU6KDKd84Kn?usp=sharing) to a corresponding directory.
+Download pretrained model weights from [here](https://drive.google.com/drive/folders/1wHOZ326pystcB5n9ooC_Ln-TjC8Gof2B) to a corresponding directory.
 ```
 ${ROOT}  
 |-- resules  
