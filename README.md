@@ -1,11 +1,6 @@
 # GATOR: Graph-Aware Transformer with Offset-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose
 ![quality results](./asset/vis.png)
 
-## Introduction
-This repository is the offical [Pytorch](https://pytorch.org/) implementation of GATOR: Graph-Aware Transformer with Offset-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose. Below is the overall architecture of GATOR.
-![overall architecture](./asset/architecture.png)
-
-
 ## Install guidelines
 - We recommend you to use an [Anaconda](https://www.anaconda.com/) virtual environment. Install [PyTorch](https://pytorch.org/) >= 1.2 according to your GPU driver and Python >= 3.7.2, and run `sh requirements.sh`. 
 
