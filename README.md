@@ -6,8 +6,22 @@
 
 ## Results
 Here is the performance of GATOR.
+For Human3.6M benchmark, GATOR is trained on Human3.6M.
+For 3DPW benchmark, GATOR is trained on Human3.6M, COCO, and MuCo.
 
-![table](./asset/tab.png)
+### Detected 2D pose input
+
+| | MPJPE | PA-MPJPE |
+|:---:|:---:|:---:|
+| Human36M | 64.0 mm | 44.7 mm |
+| 3DPW | 87.5 mm | 56.8 mm |
+
+### Ground truth 2D pose input
+
+| | MPJPE | PA-MPJPE |
+|:---:|:---:|:---:|
+| Human36M | 48.8 mm | 31.2 mm |
+| 3DPW | 50.8 mm | 30.5 mm |
 
 ## Directory
 
