@@ -64,9 +64,6 @@ def prepare_network(args, load_dir='', is_train=True):
     if is_train or load_dir:
         print(f"==> Preparing {cfg.MODEL.name} MODEL...")
         if cfg.MODEL.name == 'pose2mesh_net':
-            # model = models.pose2mesh_net.get_model(num_joint=main_dataset.joint_num, graph_L=main_dataset.graph_L)
-            # model = models.pose2mesh_net.get_model(num_joint=main_dataset.joint_num, graph_L=main_dataset.graph_L, graph_adj=main_dataset.graph_Adj)
-            # model = models.TransMesh.get_model(num_joint=main_dataset.joint_num, embed_dim=256, depth=4, graph_adj=main_dataset.graph_Adj, J_regressor=J_regressor)
             model = models.Graphormer.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=2, J_regressor=J_regressor) # 
         elif cfg.MODEL.name == 'posenet':
             model = models.posenet.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=2, J_regressor=J_regressor, pretrained=False)
@@ -118,7 +115,6 @@ class Trainer:
         self.J_regressor = eval(f'torch.Tensor(self.main_dataset.joint_regressor_{cfg.DATASET.target_joint_set}).cuda()')
 
         self.model = self.model.cuda()
-        # self.model = nn.DataParallel(self.model)
 
         self.normal_weight = cfg.MODEL.normal_loss_weight
         self.edge_weight = cfg.MODEL.edge_loss_weight
@@ -133,9 +129,8 @@ class Trainer:
                    job_type="training",
                    reinit=True)
 
-    def train(self, epoch): # 训练模块
-        self.model.train() # 如果模型中有BN层和dropout 需要在训练时加model.train() 保证BN层用每一批数据的均值和方差
-        # 而对于Dropout，model.train()是随机取一部分网络连接来训练更新参数
+    def train(self, epoch):
+        self.model.train() 
 
         lr_check(self.optimizer, epoch)
 
@@ -147,36 +142,16 @@ class Trainer:
             gt_lift3dpose, gt_reg3dpose, gt_mesh = targets['lift_pose3d'].cuda(), targets['reg_pose3d'].cuda(), targets['mesh'].cuda()
             val_lift3dpose, val_reg3dpose, val_mesh = meta['lift_pose3d_valid'].cuda(), meta['reg_pose3d_valid'].cuda(), meta['mesh_valid'].cuda()
 
-            # print('[gt_lift3dpose] ', gt_lift3dpose)
-            # print('[gt_reg3dpose] ', gt_reg3dpose)
-            # print('[gt_lift3dpose.shape]', gt_lift3dpose.shape)
-            # print('[gt_reg3dpose.shape] ', gt_reg3dpose.shape)
-
-            # model
-            # pred_mesh, lift_pose = self.model(input_pose)  
-            # B x 6890 x 3
-            # B x 12288 x 3
-            # pred_mesh = pred_mesh[:, self.main_dataset.graph_perm_reverse[:self.main_dataset.mesh_model.face.max() + 1], :]  # B x 6890 x 3
             pred_mesh, lift_pose = self.model(input_pose) 
             pred_pose = torch.matmul(self.J_regressor[None, :, :], pred_mesh * 1000)
-            # print('[pred_pose] ', pred_pose)
-            # print('[pred_pose.shape]', pred_pose.shape)
 
             # loss
-            
             loss1, loss2, loss4, loss5 = self.loss[0](pred_mesh, gt_mesh, val_mesh),  \
                                                 self.normal_weight * self.loss[1](pred_mesh, gt_mesh), \
                                                 self.joint_weight * self.loss[3](pred_pose,  gt_reg3dpose, val_reg3dpose), \
                                                 self.joint_weight * self.loss[4](lift_pose, gt_lift3dpose, val_lift3dpose)
             loss3 = 0
             loss = loss1 + loss2 + loss3 + loss4 + loss5
-            
-            # loss1, loss2, loss4 = self.loss[0](pred_mesh, gt_mesh, val_mesh),  \
-            #                                     self.normal_weight * self.loss[1](pred_mesh, gt_mesh), \
-            #                                     self.joint_weight * self.loss[3](pred_pose,  gt_reg3dpose, val_reg3dpose)
-            # loss3 = 0
-            # # loss5 = 0
-            # loss = loss1 + loss2 + loss3 + loss4
 
             if epoch > self.edge_add_epoch:
                 loss3 = self.edge_weight * self.loss[2](pred_mesh, gt_mesh)
@@ -230,18 +205,6 @@ class Tester:
 
         if self.model:
             self.model = self.model.cuda()
-            # self.model = nn.DataParallel(self.model)
-            '''
-            self.model = self.model.cuda()
-            input_2d = torch.randn(1, 17, 2).cuda()
-            flops, params = profile(self.model, inputs=(input_2d, ))
-            print('flops: ', flops, 'params: ', params)
-            flops, params = clever_format([flops, params], "%.3f")
-            print(flops, params)
-            self.model = nn.DataParallel(self.model)
-            '''
-            ## print model 
-            # summary(self.model, input_size = (17, 2), batch_size = -1)
 
         # initialize error value
         self.surface_error = 9999.9
@@ -250,7 +213,7 @@ class Tester:
     def test(self, epoch, current_model=None):
         if current_model:
             self.model = current_model
-        self.model.eval() # 保证BN用全部训练数据的均值和方差 而对于Dropout model.eval()是利用到了所有网络连接
+        self.model.eval()
 
         surface_error = 0.0
         joint_error = 0.0
@@ -262,17 +225,13 @@ class Tester:
             for i, (inputs, targets, meta) in enumerate(loader):
                 input_pose, gt_pose3d, gt_mesh = inputs['pose2d'].cuda(), targets['reg_pose3d'].cuda(), targets['mesh'].cuda()
 
-                # pred_mesh, pred_pose = self.model(input_pose)
                 pred_mesh, lift_pose = self.model(input_pose)
-                # pred_mesh = pred_mesh[:, self.val_dataset.graph_perm_reverse[:self.val_dataset.mesh_model.face.max() + 1], :]
                 pred_mesh, gt_mesh = pred_mesh * 1000, gt_mesh * 1000
 
                 pred_pose = torch.matmul(self.J_regressor[None, :, :], pred_mesh)
 
                 j_error, s_error = self.val_dataset.compute_both_err(pred_mesh, gt_mesh, pred_pose, gt_pose3d)
 
-                # vis_3d_pose(pred_pose[0].detach().cpu().numpy(), self.val_dataset.skeleton, joint_set_name='smpl')
-                # vis_3d_pose(gt_pose3d[0].detach().cpu().numpy(), self.val_dataset.skeleton, joint_set_name='smpl')
                 if i % self.print_freq == 0:
                     loader.set_description(f'{eval_prefix}({i}/{len(self.val_loader)}) => surface error: {s_error:.4f}, joint error: {j_error:.4f}')
 
@@ -318,7 +277,6 @@ class LiftTrainer:
         self.print_freq = cfg.TRAIN.print_freq
 
         self.model = self.model.cuda()
-        # self.model = nn.DataParallel(self.model)
 
         if cfg.TRAIN.wandb:
             wandb.init(config=cfg,
@@ -339,12 +297,9 @@ class LiftTrainer:
             img_joint, cam_joint = img_joint.cuda().float(), cam_joint.cuda().float()
             joint_valid = joint_valid.cuda().float()
 
-            img_joint = img_joint.view(len(img_joint), -1)  # batch x (num_joint*2)
+            img_joint = img_joint.view(len(img_joint), -1)
             pred_joint, pred_joint_feature = self.model(img_joint)
             pred_joint = pred_joint.view(-1, self.num_joint, 3)
-            # print(pred_joint.shape)
-            # print(cam_joint.shape)
-            # print(joint_valid.shape)
 
             loss = self.loss(pred_joint, cam_joint, joint_valid)
 
@@ -382,7 +337,6 @@ class LiftTester:
 
         if self.model:
             self.model = self.model.cuda()
-            # self.model = nn.DataParallel(self.model)
 
         # initialize error value
         self.surface_error = 9999.9
@@ -402,7 +356,7 @@ class LiftTester:
             for i, (img_joint, cam_joint, _) in enumerate(loader):
                 img_joint, cam_joint = img_joint.cuda().float(), cam_joint.cuda().float()
 
-                img_joint = img_joint.view(len(img_joint), -1)  # batch x (num_joint*2)
+                img_joint = img_joint.view(len(img_joint), -1)
                 pred_joint, pred_joint_feature = self.model(img_joint)
                 pred_joint = pred_joint.view(-1, self.num_joint, 3)
 

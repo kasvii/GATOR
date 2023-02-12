@@ -54,12 +54,10 @@ ${ROOT}
 - Images need to to be downloaded, but if needed you can download them from their offical sites.
 - 2D pose detection outputs can be downloaded here: [Human36M](https://drive.google.com/drive/folders/1iRuNa6CqoHbloJ-wFPpW6g72QmP9xZT-?usp=sharing), [COCO](https://drive.google.com/drive/folders/1x0lLocLWloN813njSTsP0K09opTcLULE?usp=sharing), [3DPW](https://drive.google.com/drive/folders/1qt5R4wMTP1FSUtSi52lUke3EQazNkqVh?usp=sharing)
 
-### Pytorch SMPL and MANO layer
+### Pytorch SMPL layer
 
 - For the SMPL layer, I used [smplpytorch](https://github.com/gulvarol/smplpytorch). The repo is already included in `${ROOT}/smplpytorch`.
 - Download `basicModel_f_lbs_10_207_0_v1.0.0.pkl`, `basicModel_m_lbs_10_207_0_v1.0.0.pkl`, and `basicModel_neutral_lbs_10_207_0_v1.0.0.pkl` from [here](https://smpl.is.tue.mpg.de/downloads) (female & male) and [here](http://smplify.is.tue.mpg.de/) (neutral) to `${ROOT}/smplpytorch/smplpytorch/native/models`.
-For the MANO layer, I used [manopth](https://github.com/hassony2/manopth). The repo is already included in `${ROOT}/manopth`.
-Download `MANO_RIGHT.pkl` from [here](https://mano.is.tue.mpg.de/downloads) at `${ROOT}/manopth/mano/models`.
 
 ### Pretrained model weights
 Download pretrained model weights from [here](https://drive.google.com/drive/folders/1wHOZ326pystcB5n9ooC_Ln-TjC8Gof2B) to a corresponding directory.

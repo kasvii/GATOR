@@ -50,7 +50,6 @@ class LaplacianLoss(nn.Module):
         batch_size = x.size(0)
 
         x = torch.cat([torch.matmul(self.laplacian, x[i])[None, :, :] for i in range(batch_size)], 0)
-        # x = torch.cat([torch.matmul(self.laplacian, x[i])[None, :, :] for i in range(batch_size)], 0)
 
         x = x.pow(2).sum(2)
         if self.average:

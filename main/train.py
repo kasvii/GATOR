@@ -6,7 +6,6 @@ import shutil
 
 from funcs_utils import save_checkpoint, save_plot, check_data_pararell, count_parameters
 from core.config import cfg, update_config
-'wandb'
 
 parser = argparse.ArgumentParser(description='Train Pose2Mesh')
 
@@ -15,7 +14,6 @@ parser.add_argument('--resume_training', action='store_true', help='Resume Train
 parser.add_argument('--debug', action='store_true', help='reduce dataset items')
 parser.add_argument('--gpu', type=str, default='0,1', help='assign multi-gpus by comma concat')
 parser.add_argument('--cfg', type=str, help='experiment configure file name')
-
 
 args = parser.parse_args()
 if args.cfg:
@@ -40,20 +38,16 @@ shutil.copyfile(src="./lib/models/posenet.py", dst=output_posenet_dir)
 shutil.copyfile(src="./lib/models/meshnet.py", dst=output_meshnet_dir)
 shutil.copyfile(src=args.cfg, dst=output_cfg_dir)
 
-
-
 if cfg.MODEL.name == 'pose2mesh_net':
-    trainer = Trainer(args, load_dir='./experiment/exp_08-28_11_36/checkpoint/best.pth.tar')
+    trainer = Trainer(args, load_dir='./experiment/exp_12-28_11_36/checkpoint/checkpoint21.pth.tar')
     tester = Tester(args)  # if not args.debug else None
 elif cfg.MODEL.name == 'posenet':
-    trainer = LiftTrainer(args, load_dir='./experiment/exp_09-06_01_19/checkpoint/best.pth.tar')
+    trainer = LiftTrainer(args, load_dir='./experiment/exp_12-06_01_19/checkpoint/checkpoint13.pth.tar')
     tester = LiftTester(args)  # if not args.debug else None
 
 print("===> Start training...")
 epoch = cfg.TRAIN.begin_epoch
-tester.test(epoch, current_model=trainer.model)
 for epoch in range(cfg.TRAIN.begin_epoch, cfg.TRAIN.end_epoch + 1):
-    # tester.test(epoch, current_model=trainer.model)
     trainer.train(epoch)
     trainer.lr_scheduler.step()
 
@@ -76,14 +70,8 @@ for epoch in range(cfg.TRAIN.begin_epoch, cfg.TRAIN.end_epoch + 1):
         'test_log': trainer.error_history
     }, epoch, is_best)
 
-    # save_plot(trainer.loss_history, epoch)
-    # save_plot(trainer.error_history['surface'], epoch, title='Surface Error')
-    # save_plot(trainer.error_history['joint'], epoch, title='Joint Error')
+    save_plot(trainer.loss_history, epoch)
+    save_plot(trainer.error_history['surface'], epoch, title='Surface Error')
+    save_plot(trainer.error_history['joint'], epoch, title='Joint Error')
 
 print('Training Finished! All logs were saved in ', cfg.checkpoint_dir)
-
-
-
-
-
-

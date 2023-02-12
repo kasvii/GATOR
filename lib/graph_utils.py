@@ -40,22 +40,19 @@ def build_graph(hand_tri, num_vertex):
     :return: adj: sparse matrix, V x V (torch.sparse.FloatTensor)
     """
     num_tri = hand_tri.shape[0]
-    edges = np.empty((num_tri * 3, 2)) # 初始化为none
-    for i_tri in range(num_tri): # 每个三角面的三条边
+    edges = np.empty((num_tri * 3, 2)) 
+    for i_tri in range(num_tri): 
         edges[i_tri * 3] = hand_tri[i_tri, :2]
         edges[i_tri * 3 + 1] = hand_tri[i_tri, 1:]
         edges[i_tri * 3 + 2] = hand_tri[i_tri, [0, 2]]
 
-    adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])), # 用 1 填充（row, col）
+    adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
                         shape=(num_vertex, num_vertex), dtype=np.float32) # sp.coo_matrix((data, (row, col)), shape=(4, 4))
 
     adj = adj - (adj > 1) * 1.0
 
-    # build symmetric adjacency matrix 构造对称阵
+    # build symmetric adjacency matrix 
     adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
-
-    # adj = normalize_sparse_mx(adj + sp.eye(adj.shape[0]))
-    # adj = sparse_mx_to_torch_sparse_tensor(adj)
 
     return adj
 
@@ -77,34 +74,29 @@ def build_verts_joints_relation(joints, vertices):
     '''
     vertix_num = vertices.shape[0]
     joints_num = joints.shape[0]
-    # print('vertix_num = ', vertix_num)
     nearest_relation = np.zeros((vertix_num))
     jv_sets = {}
     for (idx, v) in enumerate(vertices):
         nst_joint = v - joints
         nst_joint = nst_joint ** 2
         nst_joint = nst_joint.sum(1)
-        # nst_joint = torch.sqrt(nst_joint)
         nst_joint = np.argmin(nst_joint)
         nearest_relation[idx] = nst_joint
         if nst_joint not in jv_sets:
             jv_sets[nst_joint] = [idx]
         else:
             jv_sets[nst_joint].append(idx)
-    # for i in range(joints_num):
-    #     jv_sets[str(i)] = torch.tensor(jv_sets[i], dtype=torch.long)
-    # print(jv_sets)
     return nearest_relation, jv_sets
 
 
 def build_coarse_graphs(mesh_face, joint_num, skeleton, flip_pairs, levels=9):
-    joint_adj = build_adj(joint_num, skeleton, flip_pairs) # 骨架的连接关系 连接 + 对称
+    joint_adj = build_adj(joint_num, skeleton, flip_pairs) 
     # Build graph
-    mesh_adj = build_graph(mesh_face, mesh_face.max() + 1) # 
+    mesh_adj = build_graph(mesh_face, mesh_face.max() + 1) 
     graph_Adj, graph_L, graph_perm = coarsen(mesh_adj, levels=levels)
     input_Adj = sp.csr_matrix(joint_adj)
-    input_Adj.eliminate_zeros() # 移除矩阵中的0元素
-    input_L = laplacian(input_Adj, normalized=True) # 返回拉普拉斯矩阵
+    input_Adj.eliminate_zeros() 
+    input_L = laplacian(input_Adj, normalized=True)
 
     graph_L[-1] = input_L
     graph_Adj[-1] = input_Adj
@@ -112,7 +104,7 @@ def build_coarse_graphs(mesh_face, joint_num, skeleton, flip_pairs, levels=9):
     # Compute max eigenvalue of graph Laplacians, rescale Laplacian
     graph_lmax = []
     renewed_lmax = []
-    for i in range(levels): # 计算特征值 调整拉普拉斯矩阵
+    for i in range(levels):
         graph_lmax.append(lmax_L(graph_L[i]))
         graph_L[i] = rescale_L(graph_L[i], graph_lmax[i])
     #     renewed_lmax.append(lmax_L(graph_L[i]))

@@ -4,13 +4,8 @@ import torch.nn.functional as F
 import math
 from models.backbones import algos
 import numpy as np
-'''modules_quick27'''
 
 class GraphLinear(nn.Module):
-    """
-    Generalization of 1x1 convolutions on Graphs 
-    改变了channels,用来产生不同维度的特征
-    """
     def __init__(self, in_channels, out_channels):
         super(GraphLinear, self).__init__()
         self.in_channels = in_channels
@@ -44,7 +39,6 @@ class GraphConvolution(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        # stdv = 1. / math.sqrt(self.weight.size(1))
         stdv = 6. / math.sqrt(self.weight.size(0) + self.weight.size(1))
         self.weight.data.uniform_(-stdv, stdv)
         if self.bias is not None:
@@ -61,7 +55,6 @@ class GraphConvolution(nn.Module):
             output = []
             for i in range(x.shape[0]):
                 support = torch.matmul(x[i], self.weight)
-                # output.append(torch.matmul(self.adjmat, support))
                 output.append(spmm(self.adjmat, support))
             output = torch.stack(output, dim=0)
             if self.bias is not None:
@@ -77,7 +70,6 @@ class GraphResBlock(nn.Module):
     """
     Graph Residual Block similar to the Bottleneck Residual Block in ResNet
     """
-
     def __init__(self, in_channels, out_channels, A):
         super(GraphResBlock, self).__init__()
         self.in_channels = in_channels
@@ -115,23 +107,17 @@ class GraphNodeFeature(nn.Module):
         self.num_joint = num_joint
         self.embed_dim = embed_dim
 
-        self.atom_encoder = nn.Linear(num_joint * 2, num_joint * embed_dim) # 词典嵌入向量的查找表，词典大小、嵌入向量维度、填充id
+        self.atom_encoder = nn.Linear(num_joint * 2, num_joint * embed_dim)
         self.degree_encoder = nn.Embedding(num_degree, embed_dim, padding_idx=0)
 
     def forward(self, x, adj):
         B = x.shape[0]
         node_feature = self.atom_encoder(x) 
         node_feature = node_feature.reshape(-1, self.num_joint, self.embed_dim)
-        ## print('[node_feature],', node_feature)
-        ## print('[node_feature].shape', node_feature.shape)
 
         x_degree = adj.long().sum(dim=1).view(-1)
-        ## print('[x_degree],', x_degree)
-        ## print('[x_degree].shape', x_degree.shape)
 
         degree_feature = self.degree_encoder(x_degree)
-        ## print('[degree_feature],', degree_feature)
-        ## print('[degree_feature.shape]', degree_feature.shape)
         node_feature = (node_feature + degree_feature)
 
         return node_feature
@@ -140,7 +126,6 @@ class GraphAttnBias_edge(nn.Module):
     """
     Compute attention bias for each head.
     """
-
     def __init__(self, num_heads=8, num_spatial=10, num_joint=17, spatial_pos=None, edg_adj=None):
         super(GraphAttnBias_edge, self).__init__()
         self.num_heads = num_heads
@@ -168,15 +153,11 @@ class GraphAttnBias_edge(nn.Module):
     def forward(self):
         # [num_joint, num_joint, num_head] -> [num_head, num_joint, num_joint]
         spatial_pos_bias = self.spatial_pos_encoder(self.spatial_pos).permute(2, 0, 1)
-
         edg_adj = self.edg_adj.permute(2, 0, 1) # [max_dist, joint_nums, joint_nums]
-
         edg_adj = self.edge_encoder(edg_adj.view(-1, self.num_joint * self.num_joint)).reshape(-1, self.num_heads, self.num_joint, self.num_joint)
         # [max_dist, num_heads, num_joint, num_joint] - > [num_heads, num_joint, num_joint, max_dist]
         edg_adj = edg_adj.permute(1, 2, 3, 0)
-
         edge_feature = torch.mul(self.W, edg_adj)
-
         edge_bias = edge_feature.sum(-1) # [num_head, num_joint, num_joint]
         edge_bias = torch.mul(edge_bias, self.spatial)
 
@@ -187,7 +168,6 @@ class Attention(nn.Module):
         super().__init__()
         self.num_heads = num_heads
         print('[num_heads]',num_heads)
-        # print('[dim]',dim)
         head_dim = dim // num_heads
         self.scale = qk_scale or head_dim ** -0.5
 
@@ -203,18 +183,13 @@ class Attention(nn.Module):
         q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)  # [B, 8, 17, 32]
 
         attn = (q @ k.transpose(-2, -1)) * self.scale # [B, 8, 17, 17]
-        # print('[attn.shape] ', attn.shape)
-        # print('[attention],', attn)
-        # print('[attention.shape],', attn.shape)
         
-        
-        if attn_bias != None: # self.joint_att.shape = [17, 17] 对称阵   self.graph_adj.shape = [17, 17]包括self 对称阵 
+        if attn_bias != None: # self.joint_att.shape = [17, 17]   self.graph_adj.shape = [17, 17] 
             attn_bias = attn_bias.expand(B, -1, -1, -1)
             attn = attn + attn_bias
         
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)
-
         x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
@@ -288,7 +263,6 @@ class GCN(nn.Module):
 
         n, kc, t, v = x.size() # [B, 512, 1, 17]
         x = x.view(n, self.kernel_size, kc//self.kernel_size, t, v) # [B, 1, 512, 1, 17]
-        # x = torch.einsum('nkctv, kvw->nctw', (x, self.adj))
         x = torch.einsum('nkctv, kvw->nctw', (x, self.adj)) # [B, 512, 1, 17]
 
         return x.contiguous()
@@ -297,7 +271,6 @@ class MGCN(nn.Module):
     """
     Semantic graph convolution layer
     """
-
     def __init__(self, in_features, out_features, in_channel, adj, bias=True):
         super(MGCN, self).__init__()
         self.in_features = in_features
