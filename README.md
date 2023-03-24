@@ -2,7 +2,7 @@
 ![quality results](./asset/vis.png)
 
 ## Introduction
-This repository is the offical implementation of [GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose (ICASSP 2023)](https://arxiv.org/pdf/2303.05652.pdf). The overall architecture of GATOR is shown as following.
+This repository is the offical implementation of [GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose (ICASSP 2023)](https://arxiv.org/pdf/2303.05652.pdf). The overall architecture of GATOR is shown below.
 ![overall architecture](./asset/architecture.png)
 
 ## Install guidelines
