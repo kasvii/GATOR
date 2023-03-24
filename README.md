@@ -105,7 +105,7 @@ ${ROOT}
 
 ### Train
 
-It is a two-stage training that first pre-trains GAT and then train the whole GATOR after loading the weights of GAT.
+It is a two-stage training that first pre-trains GAT and then trains the whole GATOR after loading the weights of GAT.
 
 Select the config file in `./asset/yaml/` and train. You can change the train set and pretrained posenet by your own `*.yml` file. 
 
