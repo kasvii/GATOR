@@ -93,7 +93,7 @@ ${ROOT}
 - Download `basicModel_f_lbs_10_207_0_v1.0.0.pkl`, `basicModel_m_lbs_10_207_0_v1.0.0.pkl`, and `basicModel_neutral_lbs_10_207_0_v1.0.0.pkl` from [here](https://smpl.is.tue.mpg.de/downloads) (female & male) and [here](http://smplify.is.tue.mpg.de/) (neutral) to `${ROOT}/smplpytorch/smplpytorch/native/models`.
 
 ### Pretrained model weights
-Download pretrained model weights from [here](https://drive.google.com/drive/folders/1wHOZ326pystcB5n9ooC_Ln-TjC8Gof2B) to a corresponding directory.
+Download pretrained model weights from [here](https://drive.google.com/drive/folders/1Gcv9ceC9iyYbTY9T2x1kneqHMgwR-N9J) to a corresponding directory.
 ```
 ${ROOT}  
 |-- resules  
