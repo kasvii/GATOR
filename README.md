@@ -98,9 +98,9 @@ Download pretrained model weights from [here](https://drive.google.com/drive/fol
 ${ROOT}  
 |-- resules  
 |   |-- 3dpw_det.pth.tar
-|   |-- 3dpw_gt.pth.tar
+|   |-- 3dpw.pth.tar
 |   |-- h36m_det.pth.tar
-|   |-- h36m_gt.pth.tar
+|   |-- h36m.pth.tar
 ```
 
 ### Train
