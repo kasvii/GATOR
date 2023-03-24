@@ -2,7 +2,7 @@
 ![quality results](./asset/vis.png)
 
 ## Introduction
-This repository is the offical implementation of [GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose (ICASSP 2023)](https://arxiv.org/pdf/2303.05652.pdf). The overall architecture of GATOR is shown as following.
+This repository is the offical implementation of [GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose (ICASSP 2023)](https://arxiv.org/pdf/2303.05652.pdf). The overall architecture of GATOR is shown below.
 ![overall architecture](./asset/architecture.png)
 
 ## Install guidelines
@@ -93,19 +93,19 @@ ${ROOT}
 - Download `basicModel_f_lbs_10_207_0_v1.0.0.pkl`, `basicModel_m_lbs_10_207_0_v1.0.0.pkl`, and `basicModel_neutral_lbs_10_207_0_v1.0.0.pkl` from [here](https://smpl.is.tue.mpg.de/downloads) (female & male) and [here](http://smplify.is.tue.mpg.de/) (neutral) to `${ROOT}/smplpytorch/smplpytorch/native/models`.
 
 ### Pretrained model weights
-Download pretrained model weights from [here](https://drive.google.com/drive/folders/1wHOZ326pystcB5n9ooC_Ln-TjC8Gof2B) to a corresponding directory.
+Download pretrained model weights from [here](https://drive.google.com/drive/folders/1Gcv9ceC9iyYbTY9T2x1kneqHMgwR-N9J) to a corresponding directory.
 ```
 ${ROOT}  
 |-- resules  
 |   |-- 3dpw_det.pth.tar
-|   |-- 3dpw_gt.pth.tar
+|   |-- 3dpw.pth.tar
 |   |-- h36m_det.pth.tar
-|   |-- h36m_gt.pth.tar
+|   |-- h36m.pth.tar
 ```
 
 ### Train
 
-It is a two-stage training that first pre-trains GAT and then train the whole GATOR after loading the weights of GAT.
+It is a two-stage training that first pre-trains GAT and then trains the whole GATOR after loading the weights of GAT.
 
 Select the config file in `./asset/yaml/` and train. You can change the train set and pretrained posenet by your own `*.yml` file. 
 
@@ -137,5 +137,10 @@ python main/test.py ./asset/yaml/gator_{input joint set}_test_{dataset name}.yml
 
 # For example, test 3dpw using detected 2d pose
 python ./main/test.py --cfg ./asset/yaml/gator_cocoJ_test_human36_coco_muco_det.yml --gpu 0
-
 ```
+
+### Acknowledgement
+
+Our code is built on the following repositories. We thank the authors for their open source work.
+- [Pose2Mesh](https://github.com/hongsukchoi/Pose2Mesh_RELEASE)
+- [GTRS](https://github.com/zczcwh/GTRS)
