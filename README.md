@@ -1,8 +1,19 @@
-# GATOR: Graph-Aware Transformer with Offset-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose
+# GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose
 ![quality results](./asset/vis.png)
+
+## Introduction
+This repository is the offical implementation of [GATOR: Graph-Aware Transformer with Motion-Disentangled Regression for Human Mesh Reconstruction from a 2D Pose (ICASSP 2023)](https://arxiv.org/pdf/2303.05652.pdf). The overall architecture of GATOR is shown as following.
+![overall architecture](./asset/architecture.png)
 
 ## Install guidelines
 - We recommend you to use an [Anaconda](https://www.anaconda.com/) virtual environment. Install [PyTorch](https://pytorch.org/) >= 1.2 according to your GPU driver and Python >= 3.7.2, and run `sh requirements.sh`. 
+
+## Quick demo
+- Download the pre-trained GATOR models from [here](#pretrained-model-weights).
+- Prepare SMPL layer from [here](#pytorch-smpl-layer).
+- Run `python demo/run.py --gpu 0 --input_pose demo/coco_joint_input.npy --joint_set coco`. 
+- The `--input_pose {2d_pose_path}` follows the skeleton topology of `--joint_set {coco, human36}`, which can be found in `./data/*/dataset.py`.
+- The outputs will be saved in `./demo/result`.
 
 ## Results
 Here is the performance of GATOR.
@@ -33,11 +44,17 @@ The `data` directory structure should follow the below hierarchy.
 ```
 ${ROOT}  
 |-- data  
+|   |-- base_data
+|   |   |-- J_regressor_extra.npy 
+|   |   |-- J_regressor_h36m.npy
+|   |   |-- smpl_mean_params.npz
+|   |   |-- smpl_mean_vertices.npy
+|   |   |-- mesh_downsampling.npz
 |   |-- Human36M  
-|   |   |-- images  
+|   |   |-- images 
 |   |   |-- annotations   
-|   |   |-- J_regressor_h36m_correct.npy
 |   |   |-- absnet_output_on_testset.json 
+|   |   |-- J_regressor_h36m_correct.npy
 |   |-- MuCo  
 |   |   |-- data  
 |   |   |   |-- augmented_set  
@@ -47,26 +64,28 @@ ${ROOT}
 |   |-- COCO  
 |   |   |-- images  
 |   |   |   |-- train2017  
-|   |   |   |-- val2017  
+|   |   |   |-- val2017 
 |   |   |-- annotations  
 |   |   |-- J_regressor_coco.npy
 |   |   |-- hrnet_output_on_valset.json
 |   |-- PW3D 
 |   |   |-- data
+|   |   |   |-- 3DPW_latest_test.json
 |   |   |   |-- 3DPW_latest_train.json
 |   |   |   |-- 3DPW_latest_validation.json
 |   |   |   |-- darkpose_3dpw_testset_output.json
 |   |   |   |-- darkpose_3dpw_validationset_output.json
 |   |   |-- imageFiles
 ```
-- Download Human3.6M parsed data and SMPL parameters [[data](https://drive.google.com/drive/folders/1kgVH-GugrLoc9XyvP6nRoaFpw3TmM5xK)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/1s-yywb4zF_OOLMmw1rsYh_VZFilgSrrD)]
-- Download MuCo parsed/composited data and SMPL parameters [[data](https://drive.google.com/drive/folders/1yL2ey3aWHJnh8f_nhWP--IyC9krAPsQN)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/1_JrrbHZICDTe1lqi8S6D_Y1ObmrerAoU?usp=sharing)]
-- Download COCO SMPL parameters [[SMPL parameters from SMPLify](https://drive.google.com/drive/folders/1X7OMEGQJOe0Tcn2GvvP1koKkq4yghIzr?usp=sharing)]  
-- Download 3DPW parsed data [[data](https://drive.google.com/drive/folders/1pT0Ix3FxieEQf0HhEbMN1o-DWRzw2Ugh?usp=sharing)]
+- Download base data [[data](https://drive.google.com/drive/folders/1Fwx1IjQ5HrdCypbHwZUB2YCOKsCRvSET)]
+- Download Human3.6M parsed data and SMPL parameters [[data](https://drive.google.com/drive/folders/1r0B9I3XxIIW_jsXjYinDpL6NFcxTZart?usp=share_link)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/12fCumEgs9PXT-dAaOGq0EDpl9dGKKorF?usp=share_link)]
+- Download MuCo parsed/composited data and SMPL parameters [[data](https://drive.google.com/drive/folders/1dfhFa1kBHYKLTKuprNc7xixt3yyKEky5?usp=share_link)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/1Wm1_6tn1u-_RE1iUlibIWfS75O79aJRz?usp=share_link)] 
+- Download COCO SMPL parameters [[SMPL parameters from SMPLify](https://drive.google.com/drive/folders/1hJabUWLOMboM2sUhIj0ep6wiRsO3Kh4C?usp=sharing)]  
+- Download 3DPW parsed data [[data](https://drive.google.com/drive/folders/1_wi6G6h-JFfb9HGccysJwI02zc_S2DVJ?usp=sharing)]
 - All annotation files follow [MS COCO format](https://cocodataset.org/#format-data).
 - If you want to add your own dataset, you have to convert it to [MS COCO format](https://cocodataset.org/#format-data).
 - Images need to to be downloaded, but if needed you can download them from their offical sites.
-- 2D pose detection outputs can be downloaded here: [Human36M](https://drive.google.com/drive/folders/1iRuNa6CqoHbloJ-wFPpW6g72QmP9xZT-?usp=sharing), [COCO](https://drive.google.com/drive/folders/1x0lLocLWloN813njSTsP0K09opTcLULE?usp=sharing), [3DPW](https://drive.google.com/drive/folders/1qt5R4wMTP1FSUtSi52lUke3EQazNkqVh?usp=sharing)
+- 2D pose detection outputs can be downloaded here: [Human36M](https://drive.google.com/drive/folders/1YjACLyfm7V-cUIXr1b8SWJzmKtuhpOCp?usp=sharing), [COCO](https://drive.google.com/drive/folders/19HyI1ENxF0fKV5xXKqXTRLcc-QJJazMP?usp=sharing), [3DPW](https://drive.google.com/drive/folders/1fgliGqMgQwy6zAoUEZHayq4IySNlyqib?usp=sharing)
 
 ### Pytorch SMPL layer
 
@@ -84,15 +103,39 @@ ${ROOT}
 |   |-- h36m_gt.pth.tar
 ```
 
+### Train
+
+It is a two-stage training that first pre-trains GAT and then train the whole GATOR after loading the weights of GAT.
+
+Select the config file in `./asset/yaml/` and train. You can change the train set and pretrained posenet by your own `*.yml` file. 
+
+**1. Pre-train PoseNet**
+
+Use the config file `gat_*.yml` in `./asset/yaml/` to train GAT.
+
+Run
+```
+python main/train.py --gpu {GPU_id} --cfg ./asset/yaml/gat_{input joint set}_train_{dataset list}.yml
+```
+
+**2. Train Pose2Mesh**
+
+Set GAT weights `./experiment/exp_*/checkpoint/best.pth.tar` to the config file `gator_*.yml` in `posenet_path`. And set `posenet_pretrained` True.
+
+Run
+```
+python main/train.py --gpu {GPU_id} --cfg ./asset/yaml/gator_{input joint set}_train_{dataset list}.yml
+```
+
 ### Test
 
-Select the config file in `${ROOT}/asset/yaml/` and test. You can change the pretrained model weight. To save sampled outputs to `obj` files, change `TEST.vis` value to `True` in the config file.
+Select the config file in `./asset/yaml/` and test.
 
 Run
 ```
 python main/test.py ./asset/yaml/gator_{input joint set}_test_{dataset name}.yml --gpu 0,1,2,3 --cfg
 
-# test 3dpw using detected 2d pose
-python ./main/test.py --cfg ./asset/yaml/gator_cocoJ_train_human36_coco_muco_det.yml --gpu 0
+# For example, test 3dpw using detected 2d pose
+python ./main/test.py --cfg ./asset/yaml/gator_cocoJ_test_human36_coco_muco_det.yml --gpu 0
 
 ```

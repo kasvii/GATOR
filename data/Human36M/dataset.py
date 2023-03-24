@@ -20,13 +20,13 @@ from Human36M.noise_stats import error_distribution
 
 from funcs_utils import save_obj, stop
 from vis import vis_3d_pose, vis_2d_pose
-'whole used for training and testing'
+'''dataset_test_comera4'''
 
 class Human36M(torch.utils.data.Dataset):
     def __init__(self, mode, args):
         dataset_name = 'Human36M'
         self.debug = args.debug
-        self.data_split = mode # 'train' or 'test'
+        self.data_split = mode
         self.img_dir = osp.join(cfg.data_dir, dataset_name, 'images')
         self.annot_path = osp.join(cfg.data_dir, dataset_name, 'annotations')
         self.subject_genders = {1: 'female', 5: 'female', 6: 'male', 7: 'female', 8: 'male', 9: 'male', 11: 'male'}
@@ -42,22 +42,22 @@ class Human36M(torch.utils.data.Dataset):
         self.smpl_face_kps_vertex = self.mesh_model.face_kps_vertex
         self.smpl_vertex_num = 6890
         self.smpl_joint_num = 24
-        self.smpl_flip_pairs = ((1, 2), (4, 5), (7, 8), (10, 11), (13, 14), (16, 17), (18, 19), (20, 21), (22, 23)) # 对称关系
-        self.smpl_skeleton = ( # 连接关系
+        self.smpl_flip_pairs = ((1, 2), (4, 5), (7, 8), (10, 11), (13, 14), (16, 17), (18, 19), (20, 21), (22, 23))
+        self.smpl_skeleton = (
             (0, 1), (1, 4), (4, 7), (7, 10), (0, 2), (2, 5), (5, 8), (8, 11), (0, 3), (3, 6), (6, 9), (9, 14), (14, 17),
             (17, 19), (19, 21), (21, 23), (9, 13), (13, 16), (16, 18), (18, 20), (20, 22), (9, 12), (12, 15))
-        self.joint_regressor_smpl = self.mesh_model.layer['neutral'].th_J_regressor # mesh -> joints 的转换矩阵
+        self.joint_regressor_smpl = self.mesh_model.layer['neutral'].th_J_regressor
 
         # H36M joint set
         self.human36_joint_num = 17
         self.human36_joints_name = (
         'Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso', 'Neck', 'Nose', 'Head',
         'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist')
-        self.human36_flip_pairs = ((1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13)) # 对称关系
-        self.human36_skeleton = ( # 连接关系
+        self.human36_flip_pairs = ((1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13))
+        self.human36_skeleton = (
         (0, 7), (7, 8), (8, 9), (9, 10), (8, 11), (11, 12), (12, 13), (8, 14), (14, 15), (15, 16), (0, 1), (1, 2),
         (2, 3), (0, 4), (4, 5), (5, 6))
-        self.human36_root_joint_idx = self.human36_joints_name.index('Pelvis') # human3.6m的根节点
+        self.human36_root_joint_idx = self.human36_joints_name.index('Pelvis')
         self.human36_error_distribution = self.get_stat()
         self.human36_eval_joint = (1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 13, 14, 15, 16)
         self.joint_regressor_human36 = self.mesh_model.joint_regressor_h36m
@@ -75,13 +75,13 @@ class Human36M(torch.utils.data.Dataset):
         self.joint_regressor_coco = self.mesh_model.joint_regressor_coco
 
         self.input_joint_name = cfg.DATASET.input_joint_set  # 'coco'
-        self.joint_num, self.skeleton, self.flip_pairs = self.get_joint_setting(self.input_joint_name) # 根据输入关节类别 输出关节设置（数量、骨架、对称关系）
+        self.joint_num, self.skeleton, self.flip_pairs = self.get_joint_setting(self.input_joint_name)
 
         self.datalist, skip_idx, skip_img_path = self.load_data()
-        if self.data_split == 'test': # 如果是测试
-            det_2d_data_path = osp.join(cfg.data_dir, dataset_name, 'absnet_output_on_testset.json') # 2d pose是absnet预处理的
-            self.datalist_pose2d_det = self.load_pose2d_det(det_2d_data_path, skip_img_path) # 加载2d pose 有跳过的
-            print("Check lengths of annotation and detection output: ", len(self.datalist), len(self.datalist_pose2d_det)) # 确认二者长度相同
+        if self.data_split == 'test':
+            det_2d_data_path = osp.join(cfg.data_dir, dataset_name, 'absnet_output_on_testset.json')
+            self.datalist_pose2d_det = self.load_pose2d_det(det_2d_data_path, skip_img_path)
+            print("Check lengths of annotation and detection output: ", len(self.datalist), len(self.datalist_pose2d_det))
 
         self.graph_Adj, self.graph_L, self.graph_perm, self.graph_perm_reverse = \
             build_coarse_graphs(self.mesh_model.face, self.joint_num, self.skeleton, self.flip_pairs, levels=9)
@@ -107,15 +107,13 @@ class Human36M(torch.utils.data.Dataset):
 
     def get_subsampling_ratio(self):
         if self.data_split == 'train':
-            return 5  # 50  5
+            return 5  #
         elif self.data_split == 'test':
             return 50 #
         else:
             assert 0, print('Unknown subset')
 
     def get_subject(self):
-        '''根据不同的设定：protocol 1 或 2  选择不同的subject划分
-        '''
         if self.data_split == 'train':
             if self.protocol == 1:
                 subject = [1, 5, 6, 7, 8, 9]
@@ -137,13 +135,12 @@ class Human36M(torch.utils.data.Dataset):
     def get_stat(self):
         ordered_stats = []
         for joint in self.human36_joints_name:
-            item = list(filter(lambda stat: stat['Joint'] == joint, error_distribution))[0] # 关节的误差分布 从absposelifter获得
+            item = list(filter(lambda stat: stat['Joint'] == joint, error_distribution))[0]
             ordered_stats.append(item)
 
-        return ordered_stats # 按human3.6m顺序排好的关节误差分布
+        return ordered_stats
 
     def generate_syn_error(self):
-        '''生成误差'''
         noise = np.zeros((self.human36_joint_num, 2), dtype=np.float32)
         weight = np.zeros(self.human36_joint_num, dtype=np.float32)
         for i, ed in enumerate(self.human36_error_distribution):
@@ -159,16 +156,16 @@ class Human36M(torch.utils.data.Dataset):
 
     def load_data(self):
         print('Load annotations of Human36M Protocol ' + str(self.protocol))
-        subject_list = self.get_subject() # 划分subject
-        sampling_ratio = self.get_subsampling_ratio() # 采样率？
+        subject_list = self.get_subject()
+        sampling_ratio = self.get_subsampling_ratio()
 
-        # aggregate annotations from each subject # 从每个subject中聚集标签
+        # aggregate annotations from each subject
         db = COCO()
         cameras = {}
         joints = {}
         smpl_params = {}
         for subject in subject_list:
-            # data load 加载数据
+            # data load
             with open(osp.join(self.annot_path, 'Human36M_subject' + str(subject) + '_data.json'), 'r') as f:
                 annot = json.load(f)
             if len(db.dataset) == 0:
@@ -177,21 +174,21 @@ class Human36M(torch.utils.data.Dataset):
             else:
                 for k, v in annot.items():
                     db.dataset[k] += v
-            # camera load 加载视角
+            # camera load
             with open(osp.join(self.annot_path, 'Human36M_subject' + str(subject) + '_camera.json'), 'r') as f:
                 cameras[str(subject)] = json.load(f)
-            # joint coordinate load 加载3d joints坐标
+            # joint coordinate load
             with open(osp.join(self.annot_path, 'Human36M_subject' + str(subject) + '_joint_3d.json'), 'r') as f:
                 joints[str(subject)] = json.load(f)
-            # smpl parameter load 加载smpl参数
+            # smpl parameter load
             with open(osp.join(self.annot_path, 'Human36M_subject' + str(subject) + '_smpl_param.json'), 'r') as f:
                 smpl_params[str(subject)] = json.load(f)
-        db.createIndex() # 对象和下标相互对应 即可以从下标索引到对象
+        db.createIndex()
 
         skip_idx = []
         datalist = []
         skip_img_idx = []
-        for aid in db.anns.keys(): # 枚举anns的id
+        for aid in db.anns.keys():
             ann = db.anns[aid]
             image_id = ann['image_id']
             img = db.loadImgs(image_id)[0]
@@ -213,8 +210,8 @@ class Human36M(torch.utils.data.Dataset):
             try:
                 smpl_param = smpl_params[str(subject)][str(action_idx)][str(subaction_idx)][str(frame_idx)]
             except KeyError:
-                skip_idx.append(image_id) # 要跳过的图像id
-                skip_img_idx.append(img_path.split('/')[-1]) # 要跳过的图像地址
+                skip_idx.append(image_id)
+                skip_img_idx.append(img_path.split('/')[-1])
                 continue
 
             smpl_param['gender'] = 'neutral'  # self.subject_genders[subject] # set corresponding gender
@@ -225,14 +222,14 @@ class Human36M(torch.utils.data.Dataset):
             R, t, f, c = np.array(cam_param['R'], dtype=np.float32), np.array(cam_param['t'],
                                                                               dtype=np.float32), np.array(
                 cam_param['f'], dtype=np.float32), np.array(cam_param['c'], dtype=np.float32)
-            cam_param = {'R': R, 't': t, 'focal': f, 'princpt': c} # 相机参数
+            cam_param = {'R': R, 't': t, 'focal': f, 'princpt': c}
 
             # project world coordinate to cam, image coordinate space
             joint_world = np.array(joints[str(subject)][str(action_idx)][str(subaction_idx)][str(frame_idx)],
-                                   dtype=np.float32) # 世界坐标下的joints
-            joint_cam = world2cam(joint_world, R, t) # 相机坐标下的joints
-            joint_img = cam2pixel(joint_cam, f, c)   # 图像坐标下的joints
-            joint_vis = np.ones((self.human36_joint_num, 1)) # 可见标签？
+                                   dtype=np.float32)
+            joint_cam = world2cam(joint_world, R, t)
+            joint_img = cam2pixel(joint_cam, f, c)
+            joint_vis = np.ones((self.human36_joint_num, 1))
 
             bbox = process_bbox(np.array(ann['bbox']))
             if bbox is None: continue
@@ -247,9 +244,10 @@ class Human36M(torch.utils.data.Dataset):
                 'joint_cam': joint_cam,  # [X, Y, Z] in camera coordinate
                 'joint_vis': joint_vis,
                 'smpl_param': smpl_param,
-                'cam_param': cam_param})
+                'cam_param': cam_param,
+                'cam_idx': cam_idx})
 
-        datalist = sorted(datalist, key=lambda x: x['img_name']) # 按照图像名称排序
+        datalist = sorted(datalist, key=lambda x: x['img_name'])
 
         return datalist, skip_idx, skip_img_idx
 
@@ -357,7 +355,7 @@ class Human36M(torch.utils.data.Dataset):
         joint_cam_coco = joint_cam_coco - joint_cam_coco[-2:-1]
         joint_cam_h36m = joint_cam_h36m - joint_cam_h36m[:1]
 
-        # joint_cam is PoseNet target
+        # joint_cam is GAT target
         if self.input_joint_name == 'coco':
             joint_img, joint_cam = joint_img_coco, joint_cam_coco
         elif self.input_joint_name == 'human36':
@@ -390,7 +388,7 @@ class Human36M(torch.utils.data.Dataset):
         mean, std = np.mean(joint_img, axis=0), np.std(joint_img, axis=0)
         joint_img = (joint_img.copy() - mean) / std
 
-        if cfg.MODEL.name == 'pose2mesh_net' or cfg.MODEL.name == 'GTRS_net':
+        if cfg.MODEL.name == 'GATOR':
             # default valid
             mesh_valid = np.ones((len(mesh_cam), 1), dtype=np.float32)
             reg_joint_valid = np.ones((len(joint_cam_h36m), 1), dtype=np.float32)
@@ -408,7 +406,7 @@ class Human36M(torch.utils.data.Dataset):
 
             return inputs, targets, meta
 
-        elif cfg.MODEL.name == 'posenet' or cfg.MODEL.name == 'PAM':
+        elif cfg.MODEL.name == 'GAT':
             # default valid
             joint_valid = np.ones((len(joint_cam), 1), dtype=np.float32)
 
@@ -419,7 +417,6 @@ class Human36M(torch.utils.data.Dataset):
                     joint_valid[:] = 0
 
             return joint_img, joint_cam, joint_valid
-
 
     def replace_joint_img(self, idx, img_id, joint_img, bbox, trans):
         if self.input_joint_name == 'coco':
@@ -433,7 +430,7 @@ class Human36M(torch.utils.data.Dataset):
                     pow(pt3[0] - pt2[0], 2) + pow(pt3[1] - pt2[1], 2))
                 joint_img_coco[:17, :] = synthesize_pose(joint_img_coco[:17, :], area, num_overlap=0)
                 return joint_img_coco
-            else: # 不会在3dpw的时候用h36m做测试, 所以这段代码不会用到
+            else:
                 joint_img_coco = self.datalist_pose2d_det[img_id]
                 joint_img_coco = self.add_pelvis_and_neck(joint_img_coco)
                 for i in range(self.coco_joint_num):
@@ -446,7 +443,7 @@ class Human36M(torch.utils.data.Dataset):
                 joint_syn_error = (self.generate_syn_error() / 256) * np.array(
                     [cfg.MODEL.input_shape[1], cfg.MODEL.input_shape[0]], dtype=np.float32)
                 joint_img_h36m = joint_img_h36m[:, :2] + joint_syn_error
-                return joint_img_h36m # 返回加上误差的2d pose
+                return joint_img_h36m
             else:
                 det_data = self.datalist_pose2d_det[idx]
                 # assert img_name == det_data['img_name'], f"check: {img_name} / {det_data['img_name']}"
@@ -521,20 +518,36 @@ class Human36M(torch.utils.data.Dataset):
         assert len(annots) == len(outs)
         sample_num = len(outs)
 
+        sample_num_new = 0
+        for i in range(sample_num):
+            annot = annots[i]
+            cam_idx = annot['cam_idx']
+            if cam_idx != 4:
+                continue
+            sample_num_new += 1
+
+        print(sample_num_new)
+
         # eval H36M joints
-        pose_error_h36m = np.zeros((sample_num, len(self.human36_eval_joint)))  # pose error
+        pose_error_h36m = np.zeros((sample_num_new, len(self.human36_eval_joint)))  # pose error
         pose_error_action_h36m = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
-        pose_pa_error_h36m = np.zeros((sample_num, len(self.human36_eval_joint)))  # pose error
+        pose_pa_error_h36m = np.zeros((sample_num_new, len(self.human36_eval_joint)))  # pose error
         pose_pa_error_action_h36m = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
 
         # eval SMPL joints and mesh vertices
-        pose_error = np.zeros((sample_num, self.smpl_joint_num))  # pose error
+        pose_error = np.zeros((sample_num_new, self.smpl_joint_num))  # pose error
         pose_error_action = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
-        mesh_error = np.zeros((sample_num, self.smpl_vertex_num))  # mesh error
+        mesh_error = np.zeros((sample_num_new, self.smpl_vertex_num))  # mesh error
         mesh_error_action = [[] for _ in range(len(self.action_name))]  # mesh error for each sequence
-        for n in range(sample_num):
-            annot = annots[n]
-            out = outs[n]
+
+        n = 0
+        for i in range(sample_num):
+            annot = annots[i]
+            out = outs[i]
+
+            cam_idx = annot['cam_idx']
+            if cam_idx != 4:
+                continue
 
             # render materials
             img_path = annot['img_path']
@@ -580,6 +593,8 @@ class Human36M(torch.utils.data.Dataset):
                 mesh_to_save = mesh_coord_out / 1000
                 obj_path = osp.join(cfg.vis_dir, f'{obj_name}.obj')
                 save_obj(mesh_to_save, self.mesh_model.face, obj_path)
+
+            n = n + 1
 
         # total pose error (H36M joint set)
         tot_err = np.mean(pose_error_h36m)

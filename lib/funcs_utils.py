@@ -1,6 +1,4 @@
 import os
-import sys
-# sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import time
 import math
 import numpy as np
@@ -18,7 +16,7 @@ from core.config import cfg
 def lr_check(optimizer, epoch):
     base_epoch = 5
     if False and epoch <= base_epoch:
-        lr_warmup(optimizer, cfg.TRAIN.lr, epoch, base_epoch) # 学习率的warmup epoch少不用使用
+        lr_warmup(optimizer, cfg.TRAIN.lr, epoch, base_epoch)
 
     for param_group in optimizer.param_groups:
         curr_lr = param_group['lr']
@@ -66,7 +64,7 @@ def stop():
 def check_data_pararell(train_weight):
     new_state_dict = OrderedDict()
     for k, v in train_weight.items():
-        name = k[7:]  if k.startswith('module') else k  # remove `module.`
+        name = k[7:]  if k.startswith('module') else k
         new_state_dict[name] = v
     return new_state_dict
 

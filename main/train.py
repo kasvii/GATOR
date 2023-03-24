@@ -25,24 +25,11 @@ print("Work on GPU: ", os.environ['CUDA_VISIBLE_DEVICES'])
 
 from core.base import Trainer, Tester, LiftTrainer, LiftTester
 
-output_model_dir = os.path.join(cfg.checkpoint_dir, 'Graphormer.py')
-output_base_dir = os.path.join(cfg.checkpoint_dir, 'base.py')
-output_module_dir = os.path.join(cfg.checkpoint_dir, 'modules.py')
-output_posenet_dir = os.path.join(cfg.checkpoint_dir, 'posenet.py')
-output_meshnet_dir = os.path.join(cfg.checkpoint_dir, 'meshnet.py')
-output_cfg_dir = os.path.join(cfg.checkpoint_dir, 'cfg.yml')
-shutil.copyfile(src="./lib/models/Graphormer.py", dst=output_model_dir)
-shutil.copyfile(src="./lib/core/base.py", dst=output_base_dir)
-shutil.copyfile(src="./lib/models/backbones/modules.py", dst=output_module_dir)
-shutil.copyfile(src="./lib/models/posenet.py", dst=output_posenet_dir)
-shutil.copyfile(src="./lib/models/meshnet.py", dst=output_meshnet_dir)
-shutil.copyfile(src=args.cfg, dst=output_cfg_dir)
-
-if cfg.MODEL.name == 'pose2mesh_net':
-    trainer = Trainer(args, load_dir='./experiment/exp_12-28_11_36/checkpoint/checkpoint21.pth.tar')
+if cfg.MODEL.name == 'GATOR':
+    trainer = Trainer(args, load_dir='')
     tester = Tester(args)  # if not args.debug else None
-elif cfg.MODEL.name == 'posenet':
-    trainer = LiftTrainer(args, load_dir='./experiment/exp_12-06_01_19/checkpoint/checkpoint13.pth.tar')
+elif cfg.MODEL.name == 'GAT':
+    trainer = LiftTrainer(args, load_dir='')
     tester = LiftTester(args)  # if not args.debug else None
 
 print("===> Start training...")
@@ -63,7 +50,7 @@ for epoch in range(cfg.TRAIN.begin_epoch, cfg.TRAIN.end_epoch + 1):
 
     save_checkpoint({
         'epoch': epoch,
-        'model_state_dict': trainer.model.state_dict(),   # check_data_pararell(
+        'model_state_dict': trainer.model.state_dict(), 
         'optim_state_dict': trainer.optimizer.state_dict(),
         'scheduler_state_dict': trainer.lr_scheduler.state_dict(),
         'train_log': trainer.loss_history,

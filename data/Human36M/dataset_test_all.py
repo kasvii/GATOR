@@ -20,8 +20,7 @@ from Human36M.noise_stats import error_distribution
 
 from funcs_utils import save_obj, stop
 from vis import vis_3d_pose, vis_2d_pose
-# from IPython import embed
-'''dataset_test_comera4'''
+'all 4 camera views are used for training and testing'
 
 class Human36M(torch.utils.data.Dataset):
     def __init__(self, mode, args):
@@ -76,10 +75,10 @@ class Human36M(torch.utils.data.Dataset):
         self.joint_regressor_coco = self.mesh_model.joint_regressor_coco
 
         self.input_joint_name = cfg.DATASET.input_joint_set  # 'coco'
-        self.joint_num, self.skeleton, self.flip_pairs = self.get_joint_setting(self.input_joint_name)
+        self.joint_num, self.skeleton, self.flip_pairs = self.get_joint_setting(self.input_joint_name) 
 
         self.datalist, skip_idx, skip_img_path = self.load_data()
-        if self.data_split == 'test':
+        if self.data_split == 'test': 
             det_2d_data_path = osp.join(cfg.data_dir, dataset_name, 'absnet_output_on_testset.json')
             self.datalist_pose2d_det = self.load_pose2d_det(det_2d_data_path, skip_img_path)
             print("Check lengths of annotation and detection output: ", len(self.datalist), len(self.datalist_pose2d_det))
@@ -245,8 +244,7 @@ class Human36M(torch.utils.data.Dataset):
                 'joint_cam': joint_cam,  # [X, Y, Z] in camera coordinate
                 'joint_vis': joint_vis,
                 'smpl_param': smpl_param,
-                'cam_param': cam_param,
-                'cam_idx': cam_idx})
+                'cam_param': cam_param})
 
         datalist = sorted(datalist, key=lambda x: x['img_name'])
 
@@ -356,7 +354,7 @@ class Human36M(torch.utils.data.Dataset):
         joint_cam_coco = joint_cam_coco - joint_cam_coco[-2:-1]
         joint_cam_h36m = joint_cam_h36m - joint_cam_h36m[:1]
 
-        # joint_cam is PoseNet target
+        # joint_cam is GAT target
         if self.input_joint_name == 'coco':
             joint_img, joint_cam = joint_img_coco, joint_cam_coco
         elif self.input_joint_name == 'human36':
@@ -389,7 +387,7 @@ class Human36M(torch.utils.data.Dataset):
         mean, std = np.mean(joint_img, axis=0), np.std(joint_img, axis=0)
         joint_img = (joint_img.copy() - mean) / std
 
-        if cfg.MODEL.name == 'pose2mesh_net':
+        if cfg.MODEL.name == 'GATOR':
             # default valid
             mesh_valid = np.ones((len(mesh_cam), 1), dtype=np.float32)
             reg_joint_valid = np.ones((len(joint_cam_h36m), 1), dtype=np.float32)
@@ -407,7 +405,7 @@ class Human36M(torch.utils.data.Dataset):
 
             return inputs, targets, meta
 
-        elif cfg.MODEL.name == 'posenet':
+        elif cfg.MODEL.name == 'GAT':
             # default valid
             joint_valid = np.ones((len(joint_cam), 1), dtype=np.float32)
 
@@ -479,7 +477,7 @@ class Human36M(torch.utils.data.Dataset):
         return joint_mean_error, mesh_mean_error
 
     def evaluate_joint(self, outs):
-        # print('Evaluation start...')
+        print('Evaluation start...')
         annots = self.datalist
         assert len(annots) == len(outs)
         sample_num = len(annots)
@@ -506,11 +504,11 @@ class Human36M(torch.utils.data.Dataset):
 
         # total pose error
         tot_err = np.mean(mpjpe)
-        eval_summary = 'MPJPE (mm)    >> tot: %.2f' % (tot_err)
+        eval_summary = 'MPJPE (mm)    >> tot: %.2f\n' % (tot_err)
         print(eval_summary)
 
         tot_err = np.mean(pampjpe)
-        eval_summary = 'PA-MPJPE (mm) >> tot: %.2f' % (tot_err)
+        eval_summary = 'PA-MPJPE (mm) >> tot: %.2f\n' % (tot_err)
         print(eval_summary)
 
     def evaluate(self, outs):
@@ -519,36 +517,20 @@ class Human36M(torch.utils.data.Dataset):
         assert len(annots) == len(outs)
         sample_num = len(outs)
 
-        sample_num_new = 0
-        for i in range(sample_num):
-            annot = annots[i]
-            cam_idx = annot['cam_idx']
-            if cam_idx != 4:
-                continue
-            sample_num_new += 1
-
-        print(sample_num_new)
-
         # eval H36M joints
-        pose_error_h36m = np.zeros((sample_num_new, len(self.human36_eval_joint)))  # pose error
+        pose_error_h36m = np.zeros((sample_num, len(self.human36_eval_joint)))  # pose error
         pose_error_action_h36m = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
-        pose_pa_error_h36m = np.zeros((sample_num_new, len(self.human36_eval_joint)))  # pose error
+        pose_pa_error_h36m = np.zeros((sample_num, len(self.human36_eval_joint)))  # pose error
         pose_pa_error_action_h36m = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
 
         # eval SMPL joints and mesh vertices
-        pose_error = np.zeros((sample_num_new, self.smpl_joint_num))  # pose error
+        pose_error = np.zeros((sample_num, self.smpl_joint_num))  # pose error
         pose_error_action = [[] for _ in range(len(self.action_name))]  # pose error for each sequence
-        mesh_error = np.zeros((sample_num_new, self.smpl_vertex_num))  # mesh error
+        mesh_error = np.zeros((sample_num, self.smpl_vertex_num))  # mesh error
         mesh_error_action = [[] for _ in range(len(self.action_name))]  # mesh error for each sequence
-
-        n = 0
-        for i in range(sample_num):
-            annot = annots[i]
-            out = outs[i]
-
-            cam_idx = annot['cam_idx']
-            if cam_idx != 4:
-                continue
+        for n in range(sample_num):
+            annot = annots[n]
+            out = outs[n]
 
             # render materials
             img_path = annot['img_path']
@@ -595,7 +577,7 @@ class Human36M(torch.utils.data.Dataset):
                 obj_path = osp.join(cfg.vis_dir, f'{obj_name}.obj')
                 save_obj(mesh_to_save, self.mesh_model.face, obj_path)
 
-            n = n + 1
+
 
         # total pose error (H36M joint set)
         tot_err = np.mean(pose_error_h36m)

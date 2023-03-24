@@ -249,14 +249,14 @@ class PW3D(torch.utils.data.Dataset):
         mean, std = np.mean(joint_img_coco, axis=0), np.std(joint_img_coco, axis=0)
         joint_img_coco = (joint_img_coco.copy() - mean) / std
 
-        if cfg.MODEL.name == 'pose2mesh_net':
+        if cfg.MODEL.name == 'GATOR':
             inputs = {'pose2d': joint_img_coco}
             targets = {'mesh': mesh_cam / 1000, 'reg_pose3d': joint_cam_h36m}
             meta = {'dummy': np.ones(1, dtype=np.float32)}
 
             return inputs, targets, meta
 
-        elif cfg.MODEL.name == 'posenet':
+        elif cfg.MODEL.name == 'GAT':
             joint_valid = np.ones((len(joint_cam_coco), 1), dtype=np.float32)  # dummy
             return joint_img_coco, joint_cam_coco, joint_valid
 

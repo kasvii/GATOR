@@ -2,7 +2,31 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from models.backbones import algos
+
+def get_all_edges(path, i, j):
+    k = path[i][j]
+    if k == 510:
+        return []
+    else:
+        return get_all_edges(path, i, k) + [k] + get_all_edges(path, k, j)
+
+def gen_edg_input(max_dist, path, edge_feat):
+    (nrows, ncols) = path.shape
+    assert nrows == ncols
+    n = nrows
+    edge_fea_all = torch.zeros([n, n, max_dist])
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            if path[i][j] == 510:
+                continue
+            path_ij = [i] + get_all_edges(path, i, j) + [j]
+            num_path = len(path_ij) - 1
+            for k in range(num_path):
+                edge_fea_all[i, j, k] = edge_feat[path_ij[k], path_ij[k+1]]
+    
+    return edge_fea_all
 
 class GraphLinear(nn.Module):
     """
@@ -24,83 +48,6 @@ class GraphLinear(nn.Module):
 
     def forward(self, x):
         return torch.matmul(self.W[None, :], x) + self.b[None, :, None]
-        # return torch.matmul(x, self.W[None, :]) + self.b[None, None, :]
-
-class GraphConvolution(nn.Module):
-    """Simple GCN layer, similar to https://arxiv.org/abs/1609.02907."""
-    def __init__(self, in_features, out_features, adjmat, bias=True):
-        super(GraphConvolution, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.adjmat = adjmat
-        self.weight = nn.Parameter(torch.FloatTensor(in_features, out_features))
-        if bias:
-            self.bias = nn.Parameter(torch.FloatTensor(out_features))
-        else:
-            self.register_parameter('bias', None)
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        # stdv = 1. / math.sqrt(self.weight.size(1))
-        stdv = 6. / math.sqrt(self.weight.size(0) + self.weight.size(1))
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-stdv, stdv)
-
-    def forward(self, x):
-        if x.ndimension() == 2:
-            support = torch.matmul(x, self.weight)
-            output = torch.matmul(self.adjmat, support)
-            if self.bias is not None:
-                output = output + self.bias
-            return output
-        else:
-            output = []
-            for i in range(x.shape[0]):
-                support = torch.matmul(x[i], self.weight)
-                # output.append(torch.matmul(self.adjmat, support))
-                output.append(spmm(self.adjmat, support))
-            output = torch.stack(output, dim=0)
-            if self.bias is not None:
-                output = output + self.bias
-            return output
-
-    def __repr__(self):
-        return self.__class__.__name__ + ' (' \
-               + str(self.in_features) + ' -> ' \
-               + str(self.out_features) + ')'
-
-class GraphResBlock(nn.Module):
-    """
-    Graph Residual Block similar to the Bottleneck Residual Block in ResNet
-    """
-
-    def __init__(self, in_channels, out_channels, A):
-        super(GraphResBlock, self).__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-        self.lin1 = GraphLinear(in_channels, out_channels // 2)
-        self.conv = GraphConvolution(out_channels // 2, out_channels // 2, A)
-        self.lin2 = GraphLinear(out_channels // 2, out_channels)
-        self.skip_conv = GraphLinear(in_channels, out_channels)
-        self.pre_norm = nn.GroupNorm(in_channels // 8, in_channels)
-        self.norm1 = nn.GroupNorm((out_channels // 2) // 8, (out_channels // 2))
-        self.norm2 = nn.GroupNorm((out_channels // 2) // 8, (out_channels // 2))
-
-    def forward(self, x):
-        y = F.relu(self.pre_norm(x))
-        y = self.lin1(y)
-
-        y = F.relu(self.norm1(y))
-        y = self.conv(y.transpose(1,2)).transpose(1,2)
-
-        y = F.relu(self.norm2(y))
-        y = self.lin2(y)
-        if self.in_channels != self.out_channels:
-            x = self.skip_conv(x)
-        return x+y
-
-
 
 class GraphNodeFeature(nn.Module):
     """
@@ -112,7 +59,7 @@ class GraphNodeFeature(nn.Module):
         self.num_joint = num_joint
         self.embed_dim = embed_dim
 
-        self.atom_encoder = nn.Linear(num_joint * 2, num_joint * embed_dim) # 词典嵌入向量的查找表，词典大小、嵌入向量维度、填充id
+        self.atom_encoder = nn.Linear(num_joint * 2, num_joint * embed_dim)
         self.degree_encoder = nn.Embedding(num_degree, embed_dim, padding_idx=0)
 
     def forward(self, x, adj):
@@ -127,48 +74,34 @@ class GraphNodeFeature(nn.Module):
 
         return node_feature
 
-class GraphAttnBias(nn.Module):
+class HopPathEncoding(nn.Module):
     """
-    Compute attention bias for each head.
+    Compute hop and path encodings for each head.
     """
-
     def __init__(self, num_heads=8, num_spatial=10, num_joint=17, spatial_pos=None, edg_adj=None):
-        super(GraphAttnBias, self).__init__()
+        super(HopPathEncoding, self).__init__()
         self.num_heads = num_heads
         self.num_joint = num_joint
         edg_adj[edg_adj == -1] = 0
         self.edg_adj = edg_adj
-        num_edges = num_joint + 6
 
         self.spatial_pos = spatial_pos.long()
-
         ones = torch.ones_like(spatial_pos)
         self.spatial = spatial_pos - ones
         self.spatial = torch.where(self.spatial > 0, self.spatial, ones)
         self.spatial = self.spatial.expand(num_heads, -1, -1)
         self.spatial = 1.0 / self.spatial
-
         self.spatial_pos_encoder = nn.Embedding(num_spatial, num_heads, padding_idx=0)
         self.edge_encoder = nn.Linear(num_joint * num_joint, num_joint * num_joint * num_heads)
         self.W = nn.Parameter(torch.ones(num_heads, edg_adj.shape[0], edg_adj.shape[1], edg_adj.shape[2]))
 
-    def reset_parameters(self):
-        w_stdv = 1 / (self.num_joint) 
-        self.enc.data.uniform_(-w_stdv, w_stdv)
-
     def forward(self):
-        # [num_joint, num_joint, num_head] -> [num_head, num_joint, num_joint]
         spatial_pos_bias = self.spatial_pos_encoder(self.spatial_pos).permute(2, 0, 1)
-
-        edg_adj = self.edg_adj.permute(2, 0, 1) # [max_dist, joint_nums, joint_nums]
-
+        edg_adj = self.edg_adj.permute(2, 0, 1)
         edg_adj = self.edge_encoder(edg_adj.view(-1, self.num_joint * self.num_joint)).reshape(-1, self.num_heads, self.num_joint, self.num_joint)
-        # [max_dist, num_heads, num_joint, num_joint] - > [num_heads, num_joint, num_joint, max_dist]
         edg_adj = edg_adj.permute(1, 2, 3, 0)
-
         edge_feature = torch.mul(self.W, edg_adj)
-
-        edge_bias = edge_feature.sum(-1) # [num_head, num_joint, num_joint]
+        edge_bias = edge_feature.sum(-1)
         edge_bias = torch.mul(edge_bias, self.spatial)
 
         return spatial_pos_bias + edge_bias
@@ -185,13 +118,12 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
         
-
     def forward(self, x, attn_bias):
         B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4) # [3, B, 8, 17, 32]
-        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)  # [B, 8, 17, 32]
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]   # make torchscript happy (cannot use tensor as tuple)
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale # [B, 8, 17, 17]
+        attn = (q @ k.transpose(-2, -1)) * self.scale
         
         if attn_bias != None: 
             attn_bias = attn_bias.expand(B, -1, -1, -1)
@@ -204,6 +136,45 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+    
+class X_Feat(nn.Module):
+    def __init__(self, input_dim, output_dim, s=1, l=2, d=8, spatial_pos=None): 
+        super().__init__()
+        self.output_patch = 1 + l - s
+        self.s = s
+        self.l = l
+        self.spatial_pos = spatial_pos
+        self.linears = nn.ModuleList()
+        c_out = int(input_dim)
+        c_out_total = int(0)
+        for k in range(s, l+1, 1):
+            c_out_total = c_out_total + c_out
+            self.linears.append(
+                nn.Linear(input_dim, c_out)
+            )
+            c_out = int(c_out / d)
+        self.linearback = nn.Linear(int(c_out_total), int(output_dim))
+
+    def forward(self, input):
+        B = input.shape[0]
+        H_features = []
+        ones = torch.ones_like(self.spatial_pos).cuda()
+        zeros = torch.zeros_like(self.spatial_pos).cuda()
+        for k in range(self.s, self.l+1, 1):
+            new_channel = self.linears[k - self.s](input)
+            if k == self.s:
+                mask = torch.where(self.spatial_pos <= k, ones, zeros)
+            else:
+                mask = torch.where(self.spatial_pos == k, ones, zeros)
+            mask = mask.expand(B, -1, -1).cuda()
+            mask = mask.type_as(new_channel)
+            new_feature_sum = torch.bmm(mask, new_channel)
+            H_features.append(new_feature_sum)
+        
+        features = torch.cat(H_features, dim=-1)
+        features = self.linearback(features)         
+        
+        return features
 
 class MLP(nn.Module):
     def __init__(self, in_features, in_channel, hidden_features=None, dropout=0.1):
@@ -211,7 +182,6 @@ class MLP(nn.Module):
         self.in_channel = in_channel
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.fc2 = nn.Linear(hidden_features, in_features)
-
         self.act = nn.GELU()
         self.dropout = nn.Dropout(dropout)
 
@@ -221,34 +191,29 @@ class MLP(nn.Module):
         x = self.act(x)
         x = self.dropout(x)
         x = self.fc2(x)
-
-        x = self.dropout(x) # according to wenhao
+        x = self.dropout(x)
 
         return x
 
 class GCN(nn.Module):
     def __init__(self, in_channels, out_channels, adj):
         super().__init__()
-
         self.adj = adj.unsqueeze(0)
         self.kernel_size = self.adj.size(0) # 1
         self.conv = nn.Conv2d(in_channels, out_channels * self.kernel_size, kernel_size=(1, 1))
 
     def forward(self, x):
-        x = self.conv(x) # [B, 512, 1, 17]
-
-        n, kc, t, v = x.size() # [B, 512, 1, 17]
-        x = x.view(n, self.kernel_size, kc//self.kernel_size, t, v) # [B, 1, 512, 1, 17]
-        # x = torch.einsum('nkctv, kvw->nctw', (x, self.adj))
-        x = torch.einsum('nkctv, kvw->nctw', (x, self.adj)) # [B, 512, 1, 17]
+        x = self.conv(x)                                            # [B, embed_dim, 1, 17]
+        n, kc, t, v = x.size()                                      # [B, embed_dim, 1, 17]
+        x = x.view(n, self.kernel_size, kc//self.kernel_size, t, v) # [B, 1, embed_dim, 1, 17]
+        x = torch.einsum('nkctv, kvw->nctw', (x, self.adj))         # [B, embed_dim, 1, 17]
 
         return x.contiguous()
 
 class MGCN(nn.Module):
     """
-    Semantic graph convolution layer
+    Modulated graph convolution from https://github.com/ZhimingZo/Modulated-GCN/blob/main/Modulated_GCN/Modulated_GCN_gt/models/modulated_gcn_conv.py
     """
-
     def __init__(self, in_features, out_features, in_channel, adj, bias=True):
         super(MGCN, self).__init__()
         self.in_features = in_features
@@ -288,7 +253,6 @@ class MGCN(nn.Module):
             return output + self.bias.view(1, 1, -1)
         else:
             return output
-
 
 class SparseMM(torch.autograd.Function):
     """Redefine sparse @ dense matrix multiplication to enable backpropagation.

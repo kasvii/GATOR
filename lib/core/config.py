@@ -53,14 +53,14 @@ cfg.DATASET.BASE_DATA_DIR = 'data/base_data'
 
 """ Model """
 cfg.MODEL = edict()
-cfg.MODEL.name = 'pose2mesh_net'
+cfg.MODEL.name = 'GATOR'
 cfg.MODEL.input_shape = (384, 288)
 cfg.MODEL.normal_loss_weight = 1e-1
 cfg.MODEL.edge_loss_weight = 20
 cfg.MODEL.joint_loss_weight = 1e-3
 cfg.MODEL.posenet_pretrained = False
-cfg.MODEL.posenet_path = './experiment/exp_07-23_02_00/checkpoint'
-cfg.MODEL.motion20_use_scale = False
+cfg.MODEL.posenet_path = ''
+cfg.MODEL.alpha = False
 
 
 """ Train Detail """
@@ -75,7 +75,7 @@ cfg.TRAIN.scheduler = 'step'
 cfg.TRAIN.lr = 1e-3
 cfg.TRAIN.lr_step = [30]
 cfg.TRAIN.lr_factor = 0.1
-cfg.TRAIN.optimizer = 'rmsprop'
+cfg.TRAIN.optimizer = 'adam'
 cfg.TRAIN.wandb = False
 
 """ Augmentation """
@@ -87,7 +87,7 @@ cfg.AUG.rotate_factor = 0  # 30
 cfg.TEST = edict()
 cfg.TEST.batch_size = 64
 cfg.TEST.shuffle = False
-cfg.TEST.weight_path = './experiment/gator_cocoJ_gt_train_human36_coco'
+cfg.TEST.weight_path = ''
 cfg.TEST.vis = False
 
 

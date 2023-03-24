@@ -1,7 +1,7 @@
 DATASET:
-    train_list: ['Human36M']
-    test_list: ['Human36M']
-    input_joint_set: 'human36'
+    train_list: ['Human36M', 'COCO', 'MuCo']
+    test_list: ['PW3D']
+    input_joint_set: 'coco'
     target_joint_set: 'human36'
     workers: 16
     use_gt_input: False
@@ -13,7 +13,8 @@ MODEL:
     edge_loss_weight: 20
     joint_loss_weight: 0.001
     posenet_pretrained: False
-    alpha: False
+    posenet_path: ''
+    alpha: True
 
 TRAIN:
     print_freq: 10
@@ -27,6 +28,7 @@ TRAIN:
     lr_step: [20]
     lr_factor: 0.95
     optimizer: 'adam'
+    wandb: False
 
 AUG:
     flip: False
@@ -35,5 +37,3 @@ AUG:
 TEST:
     batch_size: 64
     shuffle: False
-    vis: False
-    weight_path: './results/h36m_det.pth.tar'

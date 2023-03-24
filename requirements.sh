@@ -7,3 +7,4 @@ pip install trimesh
 pip install pyyaml
 pip install easydict
 pip install tqdm
+pip install wandb

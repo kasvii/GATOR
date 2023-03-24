@@ -7,33 +7,26 @@ DATASET:
     use_gt_input: False
 
 MODEL:
-    name: 'GATOR'
+    name: 'GAT'
     input_shape: [384, 288]
-    normal_loss_weight: 0.1
-    edge_loss_weight: 20
-    joint_loss_weight: 0.001
-    posenet_pretrained: False
-    alpha: False
 
 TRAIN:
     print_freq: 10
-    batch_size: 64
+    batch_size: 256
     shuffle: True
     begin_epoch: 1
     end_epoch: 30
-    edge_loss_start: 7
     scheduler: 'step'
-    lr: 0.0001
-    lr_step: [20]
-    lr_factor: 0.95
+    lr: 0.0008
+    lr_step: [10]
+    lr_factor: 0.8
     optimizer: 'adam'
+    wandb: False
 
 AUG:
-    flip: False
+    flip: True
     rotate_factor: 0
 
 TEST:
     batch_size: 64
     shuffle: False
-    vis: False
-    weight_path: './results/h36m_det.pth.tar'

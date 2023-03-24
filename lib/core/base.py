@@ -1,7 +1,5 @@
 import os.path as osp
 import numpy as np
-# import sys
-# sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 import cv2
 import math
 import torch
@@ -17,15 +15,7 @@ from core.loss import get_loss
 from core.config import cfg
 from display_utils import display_model
 from funcs_utils import get_optimizer, load_checkpoint, get_scheduler, count_parameters, stop, lr_check, save_obj
-from vis import vis_2d_pose, vis_3d_pose
-
-from torchsummary import summary
-from thop import profile
-from thop import clever_format
-
 import wandb
-'wandb'
-
 
 def get_dataloader(args, dataset_names, is_train):
     dataset_split = 'TRAIN' if is_train else 'TEST'
@@ -60,13 +50,13 @@ def prepare_network(args, load_dir='', is_train=True):
     loss_history, test_error_history = [], {'surface': [], 'joint': []}
 
     main_dataset = dataset_list[0]
-    J_regressor = eval(f'torch.Tensor(main_dataset.joint_regressor_{cfg.DATASET.input_joint_set})') # .cuda()
+    J_regressor = eval(f'torch.Tensor(main_dataset.joint_regressor_{cfg.DATASET.input_joint_set})')
     if is_train or load_dir:
         print(f"==> Preparing {cfg.MODEL.name} MODEL...")
-        if cfg.MODEL.name == 'pose2mesh_net':
-            model = models.Graphormer.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=2, J_regressor=J_regressor) # 
-        elif cfg.MODEL.name == 'posenet':
-            model = models.posenet.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=2, J_regressor=J_regressor, pretrained=False)
+        if cfg.MODEL.name == 'GATOR':
+            model = models.GATOR.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=1, J_regressor=J_regressor) # 
+        elif cfg.MODEL.name == 'GAT':
+            model = models.GAT.get_model(num_joint=main_dataset.joint_num, embed_dim=128, depth=6, graph_adj=main_dataset.graph_Adj, GCN_depth=1, J_regressor=J_regressor, pretrained=False)
         print('# of model parameters: {}'.format(count_parameters(model)))
 
     if is_train:
@@ -76,7 +66,7 @@ def prepare_network(args, load_dir='', is_train=True):
 
     if load_dir and (not is_train or args.resume_training):
         print('==> Loading checkpoint')
-        checkpoint = load_checkpoint(load_dir=load_dir, pick_best=(cfg.MODEL.name == 'posenet'))
+        checkpoint = load_checkpoint(load_dir=load_dir, pick_best=(cfg.MODEL.name == 'GAT'))
         model.load_state_dict(checkpoint['model_state_dict'])
 
         if is_train:
@@ -124,7 +114,7 @@ class Trainer:
         if cfg.TRAIN.wandb:
             wandb.init(config=cfg,
                    project=cfg.MODEL.name,
-                   name='shop_GSAT_pretrain_pose2mesh/' + cfg.output_dir,
+                   name='GATOR/' + cfg.output_dir,
                    dir=cfg.output_dir,
                    job_type="training",
                    reinit=True)
@@ -281,7 +271,7 @@ class LiftTrainer:
         if cfg.TRAIN.wandb:
             wandb.init(config=cfg,
                    project=cfg.MODEL.name,
-                   name='shop_GSAT_pretrain_posenet/' + cfg.output_dir,
+                   name='GAT/' + cfg.output_dir,
                    dir=cfg.output_dir,
                    job_type="training",
                    reinit=True)
@@ -323,7 +313,6 @@ class LiftTrainer:
         self.loss_history.append(running_loss / len(self.batch_generator))
 
         print(f'Epoch{epoch} Loss: {self.loss_history[-1]:.4f}')
-
 
 class LiftTester:
     def __init__(self, args, load_dir=''):

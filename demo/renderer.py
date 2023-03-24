@@ -51,16 +51,12 @@ class Renderer:
         self.scene = pyrender.Scene(bg_color=[0.0, 0.0, 0.0, 0.0], ambient_light=(0.3, 0.3, 0.3))
 
         # light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=0.8)
-        light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=0.8)
+        light = pyrender.DirectionalLight(color=[1.0, 1.0, 1.0], intensity=1.2)
 
         light_pose = np.eye(4)
-        light_pose[:3, 3] = [0, -1, 1]
+        light_pose = trimesh.transformations.rotation_matrix(np.radians(-45), [1, 0, 0])
         self.scene.add(light, pose=light_pose)
-
-        light_pose[:3, 3] = [0, 1, 1]
-        self.scene.add(light, pose=light_pose)
-
-        light_pose[:3, 3] = [1, 1, 2]
+        light_pose = trimesh.transformations.rotation_matrix(np.radians(45), [0, 1, 0])
         self.scene.add(light, pose=light_pose)
 
     def render(self, img, verts, cam, angle=None, axis=None, mesh_filename=None, color=(1.0, 1.0, 0.9), rotate=False):
@@ -96,7 +92,7 @@ class Renderer:
             baseColorFactor=color
         )
 
-        mesh = pyrender.Mesh.from_trimesh(mesh, material=material, smooth=False)
+        mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
 
         mesh_node = self.scene.add(mesh, 'mesh')
 

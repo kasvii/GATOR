@@ -7,7 +7,7 @@ import __init_path
 from core.config import update_config, cfg
 
 
-parser = argparse.ArgumentParser(description='Test Pose2Mesh')
+parser = argparse.ArgumentParser(description='Test GATOR')
 
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
 parser.add_argument('--cfg', type=str, help='experiment configure file name')
@@ -24,9 +24,9 @@ print("Work on GPU: ", os.environ['CUDA_VISIBLE_DEVICES'])
 from core.base import Tester, LiftTester
 
 
-if cfg.MODEL.name == 'pose2mesh_net':
+if cfg.MODEL.name == 'GATOR':
     tester = Tester(args, load_dir=cfg.TEST.weight_path)  # if not args.debug else None
-elif cfg.MODEL.name == 'posenet':
+elif cfg.MODEL.name == 'GAT':
     tester = LiftTester(args, load_dir=cfg.TEST.weight_path)  # if not args.debug else None
 
 print("===> Start testing...")

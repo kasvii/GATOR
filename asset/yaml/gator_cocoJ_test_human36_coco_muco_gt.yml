@@ -7,26 +7,26 @@ DATASET:
     use_gt_input: True
 
 MODEL:
-    name: 'pose2mesh_net'
+    name: 'GATOR'
     input_shape: [384, 288]
     normal_loss_weight: 0.1
     edge_loss_weight: 20
     joint_loss_weight: 0.001
     posenet_pretrained: False
-    motion20_use_scale: False
+    alpha: False
 
 TRAIN:
     print_freq: 10
-    batch_size: 1024
+    batch_size: 64
     shuffle: True
     begin_epoch: 1
-    end_epoch: 15
+    end_epoch: 30
     edge_loss_start: 7
     scheduler: 'step'
-    lr: 0.001
-    lr_step: [12]
-    lr_factor: 0.1
-    optimizer: 'rmsprop'
+    lr: 0.0001
+    lr_step: [20]
+    lr_factor: 0.95
+    optimizer: 'adam'
 
 AUG:
     flip: False
@@ -35,5 +35,5 @@ AUG:
 TEST:
     batch_size: 64
     shuffle: False
-    weight_path: './results/3dpw_gt.pth.tar'
     vis: False
+    weight_path: './results/3dpw.pth.tar'
