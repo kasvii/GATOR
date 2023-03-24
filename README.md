@@ -139,6 +139,7 @@ python main/test.py ./asset/yaml/gator_{input joint set}_test_{dataset name}.yml
 python ./main/test.py --cfg ./asset/yaml/gator_cocoJ_test_human36_coco_muco_det.yml --gpu 0
 ```
 
+
 ### Acknowledgement
 
 Our code is built on the following repositories. We thank the authors for their open source work.
