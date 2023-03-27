@@ -50,6 +50,10 @@ ${ROOT}
 |   |   |-- smpl_mean_params.npz
 |   |   |-- smpl_mean_vertices.npy
 |   |   |-- mesh_downsampling.npz
+|   |   |-- shortest_path_h36m.npy
+|   |   |-- shortest_path_3dpw.npy
+|   |   |-- path_h36m.npy
+|   |   |-- path_3dpw.npy
 |   |-- Human36M  
 |   |   |-- images 
 |   |   |-- annotations   
