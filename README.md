@@ -85,7 +85,7 @@ ${ROOT}
 - Download Human3.6M parsed data and SMPL parameters [[data](https://drive.google.com/drive/folders/1r0B9I3XxIIW_jsXjYinDpL6NFcxTZart?usp=share_link)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/12fCumEgs9PXT-dAaOGq0EDpl9dGKKorF?usp=share_link)]
 - Download MuCo parsed/composited data and SMPL parameters [[data](https://drive.google.com/drive/folders/1dfhFa1kBHYKLTKuprNc7xixt3yyKEky5?usp=share_link)][[SMPL parameters from SMPLify-X](https://drive.google.com/drive/folders/1Wm1_6tn1u-_RE1iUlibIWfS75O79aJRz?usp=share_link)] 
 - Download COCO SMPL parameters [[SMPL parameters from SMPLify](https://drive.google.com/drive/folders/1hJabUWLOMboM2sUhIj0ep6wiRsO3Kh4C?usp=sharing)]  
-- Download 3DPW parsed data [[data](https://drive.google.com/drive/folders/1_wi6G6h-JFfb9HGccysJwI02zc_S2DVJ?usp=sharing)]
+- Download 3DPW parsed data [[data](https://drive.google.com/drive/folders/1Sw9HB1nbMYHP2hX1TeoQd-groUMb2HIo?usp=sharing)]
 - All annotation files follow [MS COCO format](https://cocodataset.org/#format-data).
 - If you want to add your own dataset, you have to convert it to [MS COCO format](https://cocodataset.org/#format-data).
 - Images need to to be downloaded, but if needed you can download them from their offical sites.
@@ -100,7 +100,7 @@ ${ROOT}
 Download pretrained model weights from [here](https://drive.google.com/drive/folders/1Gcv9ceC9iyYbTY9T2x1kneqHMgwR-N9J) to a corresponding directory.
 ```
 ${ROOT}  
-|-- resules  
+|-- results  
 |   |-- 3dpw_det.pth.tar
 |   |-- 3dpw.pth.tar
 |   |-- h36m_det.pth.tar
